@@ -1,0 +1,12 @@
+repo:
+  clone_url: "https://github.com/nsavinda/git-hooks.git"
+  branch: "main"
+
+service:
+  name: myservice
+  clonePath: home/nirmal/Project/cssl/AutoPuller/deployments/
+  execCommand: ./main
+  preStartHook: home/nirmal/Project/cssl/AutoPuller/hooks/prestart.sh
+  
+
+
