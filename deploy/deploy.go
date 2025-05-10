@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 
 	"AutoPuller/config"
 	"AutoPuller/systemd"
@@ -59,9 +60,15 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get the currently active service
+	current := util.GetActiveService()
+
+	// Get the next service name based on current active service
+	next := util.GetNextService(current)
+
 	// Define the directory for the deployment
 	// dir := fmt.Sprintf("deployments/%s", sha)
-	dir := fmt.Sprintf("%s/%s", cfg.Service.ClonePath, sha)
+	dir := fmt.Sprintf("%s%s", cfg.Service.ClonePath, next)
 
 	// Clone or pull the repository
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
@@ -84,14 +91,24 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Get the currently active service
-	current := util.GetActiveService()
-
-	// Get the next service name based on current active service
-	next := util.GetNextService(current)
+	// Run the pre-start hook if defined
+	if cfg.Service.PreStartHook != "" {
+		// %i in the PreStartHook is replaced with the next service name
+		// next := util.GetNextService(util.GetActiveService())
+		preStartHook := strings.ReplaceAll(cfg.Service.PreStartHook, "%i", next)
+		cmd := exec.Command(preStartHook)
+		cmd.Dir = dir
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			log.Fatal("pre-start hook failed:", err)
+			http.Error(w, "pre-start hook failed", http.StatusInternalServerError)
+			return
+		}
+	}
 
 	// Format unit name based on service name and commit SHA
-	unit := fmt.Sprintf("%s@%s.service", cfg.Service.Name, sha)
+	unit := fmt.Sprintf("%s@%s.service", cfg.Service.Name, next)
 
 	// Restart the new service
 	if err := systemd.RestartService(unit); err != nil {
@@ -103,8 +120,9 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 	// Stop the current active service
 	if err := systemd.StopService(current); err != nil {
 		log.Println("Failed to stop the current service:", err)
-		http.Error(w, "failed to stop current service", http.StatusInternalServerError)
-		return
+		// http.Error(w, "failed to stop current service", http.StatusInternalServerError)
+
+		// return
 	}
 
 	// Update the active service to the new one

@@ -22,8 +22,9 @@ Description=My App Service - %%i
 After=network.target
 
 [Service]
-ExecStartPre=%s  
+# ExecStartPre=%s  
 WorkingDirectory=%s%%i
+Environment=PORT=870%%i
 ExecStart=%s%%i/%s
 Restart=on-failure
 RestartSec=10s

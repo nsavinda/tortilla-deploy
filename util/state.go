@@ -10,16 +10,16 @@ const stateFile = "active_service.txt"
 func GetActiveService() string {
 	data, err := os.ReadFile(stateFile)
 	if err != nil {
-		return "blue" // default
+		return "1" // default
 	}
 	return strings.TrimSpace(string(data))
 }
 
 func GetNextService(current string) string {
-	if current == "blue" {
-		return "green"
+	if current == "1" {
+		return "2"
 	}
-	return "blue"
+	return "1"
 }
 
 func SetActiveService(svc string) error {

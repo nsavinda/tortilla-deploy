@@ -33,7 +33,7 @@ func RestartService(unitName string) error {
 	return nil
 }
 
-// StopService stops a given systemd unit (e.g., "myapp@sha123.service")
+// StopService stops a given systemd unit (e.g., "myapp@1.service")
 func StopService(unitName string) error {
 	conn, err := dbus.NewWithContext(context.Background())
 	if err != nil {
