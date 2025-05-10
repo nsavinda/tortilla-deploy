@@ -5,16 +5,13 @@ import (
 	"log"
 	"net/http"
 
-	"AutoPuller/config"
 	"AutoPuller/deploy"
+	"AutoPuller/systemd"
 )
 
 func main() {
-	cfg, err := config.Load()
-	if err != nil {
-		log.Fatal("Failed")
-		return
-	}
+
+	systemd.GenerateServiceFile()
 
 	http.HandleFunc("/webhook", deploy.WebhookHandler)
 	fmt.Println("Listening on :9082...")

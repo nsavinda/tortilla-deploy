@@ -15,7 +15,7 @@ type Config struct {
 	Service struct {
 		Name         string `yaml:"name"`
 		ClonePath    string `yaml:"clonePath"`
-		ExecCommand  string `yaml:"execCommand"`
+		ExecFile     string `yaml:"execFile"`
 		PreStartHook string `yaml:"preStartHook"`
 	} `yaml:"service"`
 }

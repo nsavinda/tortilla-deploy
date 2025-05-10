@@ -1,12 +1,10 @@
 repo:
-  clone_url: "https://github.com/nsavinda/git-hooks.git"
+  clone_url: "https://github.com/nsavinda/go-test-server.git"
   branch: "main"
 
 service:
   name: myservice
-  clonePath: home/nirmal/Project/cssl/AutoPuller/deployments/
-  execCommand: ./main
-  preStartHook: home/nirmal/Project/cssl/AutoPuller/hooks/prestart.sh
+  clonePath: /home/nirmal/Project/cssl/AutoPuller/deployments/
+  execFile: main
+  preStartHook:  /home/nirmal/Project/cssl/AutoPuller/deployments/%i/build.sh
   
-
-
