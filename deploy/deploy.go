@@ -118,11 +118,12 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Stop the current active service
-	if err := systemd.StopService(current); err != nil {
+	currentUnit := fmt.Sprintf("%s@%s.service", cfg.Service.Name, current)
+	if err := systemd.StopService(currentUnit); err != nil {
 		log.Println("Failed to stop the current service:", err)
-		// http.Error(w, "failed to stop current service", http.StatusInternalServerError)
+		http.Error(w, "failed to stop current service", http.StatusInternalServerError)
 
-		// return
+		return
 	}
 
 	// Update the active service to the new one

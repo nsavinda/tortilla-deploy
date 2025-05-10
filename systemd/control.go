@@ -42,6 +42,7 @@ func StopService(unitName string) error {
 	defer conn.Close()
 
 	ch := make(chan string)
+
 	_, err = conn.StopUnitContext(context.Background(), unitName, "replace", ch)
 	if err != nil {
 		return fmt.Errorf("failed to request stop: %w", err)
