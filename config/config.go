@@ -18,7 +18,7 @@ type Config struct {
 		ExecFile     string `yaml:"execFile"`
 		PreStartHook string `yaml:"preStartHook"`
 		DestPorts    []int  `yaml:"destPorts"`
-		SrcPort      int    `yaml:"srcPort"`
+		ListenPort   int    `yaml:"listenPort"`
 	} `yaml:"service"`
 }
 
