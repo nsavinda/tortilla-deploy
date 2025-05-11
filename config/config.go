@@ -17,6 +17,8 @@ type Config struct {
 		ClonePath    string `yaml:"clonePath"`
 		ExecFile     string `yaml:"execFile"`
 		PreStartHook string `yaml:"preStartHook"`
+		DestPorts    []int  `yaml:"destPorts"`
+		SrcPort      int    `yaml:"srcPort"`
 	} `yaml:"service"`
 }
 

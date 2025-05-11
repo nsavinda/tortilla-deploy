@@ -7,4 +7,8 @@ service:
   clonePath: /home/nirmal/Project/cssl/AutoPuller/deployments/
   execFile: main
   preStartHook:  /home/nirmal/Project/cssl/AutoPuller/deployments/%i/build.sh
+  srcPort: 8700
+  destPorts:
+    - 8701
+    - 8702
   
