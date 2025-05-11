@@ -26,14 +26,14 @@ func UpdateIPTables(prevPort, newPort int) error {
 		return fmt.Errorf("failed to list iptables rules: %v", err)
 	}
 
-	fmt.Println("🔥 Checking for existing rules...")
+	fmt.Println("Checking for existing rules...")
 
 	// Regex to extract the `--to-destination` part
 	r := regexp.MustCompile(`--to-destination\s+([\d\.]+:\d+)`)
 
 	for _, rule := range existingRules {
 		if strings.Contains(rule, "--dport "+prevPortStr) {
-			fmt.Println("🔍 Found existing rule: ", rule)
+			fmt.Println("Found existing rule: ", rule)
 
 			// Extract the `--to-destination` value
 			matches := r.FindStringSubmatch(rule)
@@ -46,12 +46,12 @@ func UpdateIPTables(prevPort, newPort int) error {
 					"-j", "DNAT",
 					"--to-destination", toDestination)
 				if err != nil {
-					fmt.Printf("❌ Failed to remove old iptables rule: %v\n", err)
+					fmt.Printf("Failed to remove old iptables rule: %v\n", err)
 				} else {
-					fmt.Printf("✅ Removed existing rule for port %s → %s\n", prevPortStr, toDestination)
+					fmt.Printf("Removed existing rule for port %s → %s\n", prevPortStr, toDestination)
 				}
 			} else {
-				fmt.Println("⚠️ Could not parse --to-destination from rule. Skipping.")
+				fmt.Println("Could not parse --to-destination from rule. Skipping.")
 			}
 		}
 	}
@@ -66,6 +66,6 @@ func UpdateIPTables(prevPort, newPort int) error {
 		return fmt.Errorf("failed to update iptables: %v", err)
 	}
 
-	fmt.Printf("🔥 iptables updated: %d → %d\n", prevPort, newPort)
+	fmt.Printf("iptables updated: %d → %d\n", prevPort, newPort)
 	return nil
 }
