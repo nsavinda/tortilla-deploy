@@ -119,11 +119,6 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Switch traffic to the new service
-	// forwarder := traffic.NewForwarder()
-	// if err := forwarder.Start(cfg.Service.SrcPort, cfg.Service.DestPorts[int(next[0]-'0')-1]); err != nil {
-	// 	log.Println("Failed to start traffic forwarder:", err)
-	// }
-	// log.Println("Traffic switched to:", cfg.Service.DestPorts[int(next[0]-'0')-1])
 	if err := traffic.UpdateIPTables(cfg.Service.ListenPort, cfg.Service.DestPorts[int(next[0]-'0')-1]); err != nil {
 		log.Println("Failed to update iptables:", err)
 		http.Error(w, "failed to update iptables", http.StatusInternalServerError)

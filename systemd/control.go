@@ -8,7 +8,6 @@ import (
 	"github.com/coreos/go-systemd/v22/dbus"
 )
 
-// RestartService restarts a given systemd unit (e.g., "myapp@sha123.service")
 func RestartService(unitName string) error {
 	conn, err := dbus.NewWithContext(context.Background())
 	if err != nil {
@@ -33,7 +32,6 @@ func RestartService(unitName string) error {
 	return nil
 }
 
-// StopService stops a given systemd unit (e.g., "myapp@1.service")
 func StopService(unitName string) error {
 	conn, err := dbus.NewWithContext(context.Background())
 	if err != nil {
