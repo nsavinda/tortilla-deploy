@@ -35,9 +35,9 @@ After=network.target
 
 [Service]
 # ExecStartPre=%s
-WorkingDirectory=%s/%s
+WorkingDirectory=%s%s
 Environment=PORT=%d
-ExecStart=%s/%s/%s
+ExecStart=%s%s/%s
 Restart=on-failure
 RestartSec=10s
 
