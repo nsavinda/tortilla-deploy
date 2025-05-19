@@ -4,9 +4,9 @@ repo:
 
 service:
   name: myservice
-  clonePath: /home/nirmal/Project/cssl/AutoPuller/deployments/
+  clonePath: /home/nirmal/Project/elixir-craft/AutoPuller/deployments/
   execFile: main
-  preStartHook:  /home/nirmal/Project/cssl/AutoPuller/deployments/%i/build.sh
+  preStartHook:  /home/nirmal/Project/elixir-craft/AutoPuller/deployments/%i/build.sh
   listenPort: 8700
   destPorts:
     - 8701

@@ -11,7 +11,7 @@ import (
 
 func main() {
 
-	systemd.GenerateServiceFile()
+	systemd.GenerateServiceFiles()
 
 	http.HandleFunc("/webhook", deploy.WebhookHandler)
 	fmt.Println("Listening on :9082...")

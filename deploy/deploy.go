@@ -109,7 +109,7 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Format unit name based on service name and commit SHA
-	unit := fmt.Sprintf("%s@%s.service", cfg.Service.Name, next)
+	unit := fmt.Sprintf("%s.%s.service", cfg.Service.Name, next)
 
 	// Restart the new service
 	if err := systemd.RestartService(unit); err != nil {
@@ -118,15 +118,22 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var destinationPort int
+	if next == "blue" {
+		destinationPort = cfg.Service.DestPorts[0]
+	} else {
+		destinationPort = cfg.Service.DestPorts[1]
+	}
+
 	// Switch traffic to the new service
-	if err := traffic.UpdateIPTables(cfg.Service.ListenPort, cfg.Service.DestPorts[int(next[0]-'0')-1]); err != nil {
+	if err := traffic.UpdateIPTables(cfg.Service.ListenPort, destinationPort); err != nil {
 		log.Println("Failed to update iptables:", err)
 		http.Error(w, "failed to update iptables", http.StatusInternalServerError)
 		return
 	}
 
 	// Stop the current active service
-	currentUnit := fmt.Sprintf("%s@%s.service", cfg.Service.Name, current)
+	currentUnit := fmt.Sprintf("%s.%s.service", cfg.Service.Name, current)
 	if err := systemd.StopService(currentUnit); err != nil {
 		log.Println("Failed to stop the current service:", err)
 		http.Error(w, "failed to stop current service", http.StatusInternalServerError)
