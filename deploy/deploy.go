@@ -119,14 +119,19 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var destinationPort int
+	var prvDestPort int
 	if next == "blue" {
 		destinationPort = cfg.Service.DestPorts[0]
+		prvDestPort = cfg.Service.DestPorts[1]
+
 	} else {
 		destinationPort = cfg.Service.DestPorts[1]
+		prvDestPort = cfg.Service.DestPorts[0]
+
 	}
 
 	// Switch traffic to the new service
-	if err := traffic.UpdateIPTables(cfg.Service.ListenPort, destinationPort); err != nil {
+	if err := traffic.UpdateIPTables(cfg.Service.ListenPort, destinationPort, prvDestPort); err != nil {
 		log.Println("Failed to update iptables:", err)
 		http.Error(w, "failed to update iptables", http.StatusInternalServerError)
 		return
