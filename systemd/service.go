@@ -8,7 +8,6 @@ import (
 	"AutoPuller/config"
 )
 
-// GenerateServiceFiles creates both blue and green systemd service unit files
 func GenerateServiceFiles() ([]string, error) {
 	cfg, err := config.Load()
 	if err != nil {

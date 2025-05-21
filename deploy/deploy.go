@@ -26,7 +26,6 @@ type PushEvent struct {
 	} `json:"repository"`
 }
 
-// WebhookHandler handles the webhook POST request
 func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 	// Read the body of the request
 	body, err := io.ReadAll(r.Body)
@@ -68,7 +67,6 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 	next := util.GetNextService(current)
 
 	// Define the directory for the deployment
-	// dir := fmt.Sprintf("deployments/%s", sha)
 	dir := fmt.Sprintf("%s%s", cfg.Service.ClonePath, next)
 
 	// Clone or pull the repository
@@ -95,7 +93,6 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 	// Run the pre-start hook if defined
 	if cfg.Service.PreStartHook != "" {
 		// %i in the PreStartHook is replaced with the next service name
-		// next := util.GetNextService(util.GetActiveService())
 		preStartHook := strings.ReplaceAll(cfg.Service.PreStartHook, "%i", next)
 		cmd := exec.Command(preStartHook)
 		cmd.Dir = dir
@@ -142,7 +139,6 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 	if err := systemd.StopService(currentUnit); err != nil {
 		log.Println("Failed to stop the current service:", err)
 		http.Error(w, "failed to stop current service", http.StatusInternalServerError)
-
 		return
 	}
 

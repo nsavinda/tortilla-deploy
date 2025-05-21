@@ -65,16 +65,6 @@ func UpdateIPTables(sourcePort, newPort, prvPort int) error {
 		}
 	}
 
-	// // Add the new rule
-	// err = ipt.AppendUnique("nat", "OUTPUT", "-p", "tcp",
-	// 	"--dport", sourcePortStr,
-	// 	"-j", "DNAT",
-	// 	"--to-destination", newPortStr)
-
-	// if err != nil {
-	// 	return fmt.Errorf("failed to append iptables rule: %v", err)
-	// }
-
 	fmt.Printf("iptables updated: %d → %d\n", sourcePort, newPort)
 	return nil
 }
