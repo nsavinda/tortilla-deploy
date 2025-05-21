@@ -7,18 +7,18 @@ import (
 )
 
 type Config struct {
-	Repo struct {
-		CloneURL string `yaml:"clone_url"`
-		Branch   string `yaml:"branch"`
-	} `yaml:"repo"`
+	Repository struct {
+		URL    string `yaml:"url"`
+		Branch string `yaml:"branch"`
+	} `yaml:"repository"`
 
 	Service struct {
-		Name         string `yaml:"name"`
-		ClonePath    string `yaml:"clonePath"`
-		ExecFile     string `yaml:"execFile"`
-		PreStartHook string `yaml:"preStartHook"`
-		DestPorts    []int  `yaml:"destPorts"`
-		ListenPort   int    `yaml:"listenPort"`
+		Name           string `yaml:"name"`
+		DeploymentsDir string `yaml:"deployments_dir"`
+		Executable     string `yaml:"executable"`
+		PreStartHook   string `yaml:"pre_start_hook"`
+		ListenPort     int    `yaml:"listen_port"`
+		TargetPorts    []int  `yaml:"target_ports"`
 	} `yaml:"service"`
 }
 

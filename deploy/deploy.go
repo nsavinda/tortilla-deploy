@@ -49,7 +49,7 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate the repository and branch
-	if event.Repository.CloneURL != cfg.Repo.CloneURL || event.Ref != "refs/heads/"+cfg.Repo.Branch {
+	if event.Repository.CloneURL != cfg.Repository.URL || event.Ref != "refs/heads/"+cfg.Repository.Branch {
 		http.Error(w, "unauthorized repository or branch", http.StatusForbidden)
 		return
 	}
@@ -67,12 +67,12 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 	next := util.GetNextService(current)
 
 	// Define the directory for the deployment
-	dir := fmt.Sprintf("%s%s", cfg.Service.ClonePath, next)
+	dir := fmt.Sprintf("%s%s", cfg.Service.DeploymentsDir, next)
 
 	// Clone or pull the repository
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		// Clone if it doesn't exist
-		cmd := exec.Command("git", "clone", cfg.Repo.CloneURL, dir)
+		cmd := exec.Command("git", "clone", cfg.Repository.URL, dir)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err != nil {
@@ -118,12 +118,12 @@ func WebhookHandler(w http.ResponseWriter, r *http.Request) {
 	var destinationPort int
 	var prvDestPort int
 	if next == "blue" {
-		destinationPort = cfg.Service.DestPorts[0]
-		prvDestPort = cfg.Service.DestPorts[1]
+		destinationPort = cfg.Service.TargetPorts[0]
+		prvDestPort = cfg.Service.TargetPorts[1]
 
 	} else {
-		destinationPort = cfg.Service.DestPorts[1]
-		prvDestPort = cfg.Service.DestPorts[0]
+		destinationPort = cfg.Service.TargetPorts[1]
+		prvDestPort = cfg.Service.TargetPorts[0]
 
 	}
 

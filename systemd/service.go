@@ -15,10 +15,10 @@ func GenerateServiceFiles() ([]string, error) {
 	}
 
 	colors := []string{"blue", "green"}
-	ports := cfg.Service.DestPorts
+	ports := cfg.Service.TargetPorts
 
 	if len(colors) != len(ports) {
-		return nil, fmt.Errorf("mismatch between number of colors and destination ports")
+		return nil, fmt.Errorf("mismatch between number of colors and target ports")
 	}
 
 	var createdUnits []string
@@ -45,10 +45,10 @@ WantedBy=multi-user.target
 `,
 			color,
 			cfg.Service.PreStartHook,
-			cfg.Service.ClonePath, color,
+			cfg.Service.DeploymentsDir, color,
 			port,
-			cfg.Service.ClonePath, color,
-			cfg.Service.ExecFile,
+			cfg.Service.DeploymentsDir, color,
+			cfg.Service.Executable,
 		)
 
 		if err := os.WriteFile(filePath, []byte(serviceContent), 0644); err != nil {
