@@ -23,7 +23,7 @@ type Config struct {
 }
 
 func Load() (*Config, error) {
-	file, err := os.Open("config.yaml")
+	file, err := os.Open("/etc/autopuller/config.yaml")
 	if err != nil {
 		return nil, err
 	}
