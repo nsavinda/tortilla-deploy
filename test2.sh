@@ -13,7 +13,7 @@ BODY='{
 
 SIGNATURE="sha256=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | cut -d ' ' -f2)"
 
-curl -X POST http://localhost:9082/webhook \
+curl -X POST http://44.202.127.157/webhook \
   -H "Content-Type: application/json" \
   -H "X-GitHub-Event: push" \
   -H "X-Hub-Signature-256: $SIGNATURE" \
