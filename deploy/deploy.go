@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"strings"
+	"path"
 
 	"AutoPuller/config"
 	"AutoPuller/systemd"
@@ -44,7 +44,11 @@ func Execute(cloneURL, ref, sha string) (int, error) {
 	}
 
 	if cfg.Service.PreStartHook != "" {
-		hook := strings.ReplaceAll(cfg.Service.PreStartHook, "%i", next)
+		// hook := strings.ReplaceAll(cfg.Service.PreStartHook, "%i", next)
+		// hook := cfg.Service.DeploymentsDir + cfg.Service.PreStartHook
+		// use path combine
+		hook := path.Join(cfg.Service.DeploymentsDir, next, cfg.Service.PreStartHook)
+
 		cmd := exec.Command(hook)
 		cmd.Dir = dir
 		cmd.Stdout = os.Stdout
