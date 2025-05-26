@@ -7,6 +7,8 @@ import (
 )
 
 type Config struct {
+	WebhookPort int `yaml:"webhook_port"`
+
 	Repository struct {
 		URL    string `yaml:"url"`
 		Branch string `yaml:"branch"`

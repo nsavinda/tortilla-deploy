@@ -12,6 +12,7 @@
 #     - 8701
 #     - 8702
   
+webhook_port: 9082
 
 repository:
   url: "https://github.com/nsavinda/go-test-server.git"
