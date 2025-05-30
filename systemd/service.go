@@ -8,40 +8,55 @@ import (
 	"AutoPuller/config"
 )
 
-func GenerateServiceFile() (string, error) {
+func GenerateServiceFiles() ([]string, error) {
 	cfg, err := config.Load()
 	if err != nil {
-		return "", fmt.Errorf("failed to load config: %w", err)
+		return nil, fmt.Errorf("failed to load config: %w", err)
 	}
 
-	unitName := fmt.Sprintf("%s@.service", cfg.Service.Name)
-	filePath := filepath.Join("/etc/systemd/system", unitName)
+	colors := []string{"blue", "green"}
+	ports := cfg.Service.TargetPorts
 
-	serviceContent := fmt.Sprintf(`[Unit]
-Description=My App Service - %%i
+	if len(colors) != len(ports) {
+		return nil, fmt.Errorf("mismatch between number of colors and target ports")
+	}
+
+	var createdUnits []string
+
+	for i, color := range colors {
+		port := ports[i]
+		serviceName := fmt.Sprintf("%s.%s.service", cfg.Service.Name, color)
+		filePath := filepath.Join("/etc/systemd/system", serviceName)
+
+		serviceContent := fmt.Sprintf(`[Unit]
+Description=My App Service - %s
 After=network.target
 
 [Service]
-# ExecStartPre=%s  
-WorkingDirectory=%s%%i
-Environment=PORT=870%%i
-ExecStart=%s%%i/%s
+# ExecStartPre=%s
+WorkingDirectory=%s%s
+Environment=PORT=%d
+ExecStart=%s%s/%s
 Restart=on-failure
 RestartSec=10s
 
 [Install]
 WantedBy=multi-user.target
 `,
-		cfg.Service.PreStartHook,
-		cfg.Service.ClonePath,
-		cfg.Service.ClonePath,
-		cfg.Service.ExecFile,
-	)
+			color,
+			cfg.Service.PreStartHook,
+			cfg.Service.DeploymentsDir, color,
+			port,
+			cfg.Service.DeploymentsDir, color,
+			cfg.Service.Executable,
+		)
 
-	err = os.WriteFile(filePath, []byte(serviceContent), 0644)
-	if err != nil {
-		return "", fmt.Errorf("failed to write service file: %w", err)
+		if err := os.WriteFile(filePath, []byte(serviceContent), 0644); err != nil {
+			return nil, fmt.Errorf("failed to write %s service file: %w", color, err)
+		}
+
+		createdUnits = append(createdUnits, serviceName)
 	}
 
-	return unitName, nil
+	return createdUnits, nil
 }

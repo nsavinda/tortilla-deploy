@@ -1,14 +1,29 @@
-repo:
-  clone_url: "https://github.com/nsavinda/go-test-server.git"
+# repo:
+#   clone_url: "https://github.com/nsavinda/go-test-server.git"
+#   branch: "main"
+
+# service:
+#   name: myservice
+#   clonePath: /home/nirmal/Project/elixir-craft/AutoPuller/deployments/
+#   execFile: main
+#   preStartHook:  /home/nirmal/Project/elixir-craft/AutoPuller/deployments/%i/build.sh
+#   listenPort: 8700
+#   destPorts:
+#     - 8701
+#     - 8702
+  
+webhook_port: 9082
+
+repository:
+  url: "https://github.com/nsavinda/go-test-server.git"
   branch: "main"
 
 service:
-  name: myservice
-  clonePath: /home/nirmal/Project/cssl/AutoPuller/deployments/
-  execFile: main
-  preStartHook:  /home/nirmal/Project/cssl/AutoPuller/deployments/%i/build.sh
-  listenPort: 8700
-  destPorts:
+  name: autopuller
+  deployments_dir: /home/nirmal/Projects/elixir-craft/AutoPuller/deployments/
+  executable: main
+  pre_start_hook: build.sh
+  listen_port: 8700
+  target_ports:
     - 8701
     - 8702
-  

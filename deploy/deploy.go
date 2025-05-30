@@ -1,14 +1,12 @@
 package deploy
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
-	"strings"
+	"path"
 
 	"AutoPuller/config"
 	"AutoPuller/systemd"
@@ -16,131 +14,85 @@ import (
 	"AutoPuller/util"
 )
 
-type PushEvent struct {
-	Ref        string `json:"ref"`
-	HeadCommit struct {
-		ID string `json:"id"`
-	} `json:"head_commit"`
-	Repository struct {
-		CloneURL string `json:"clone_url"`
-	} `json:"repository"`
-}
-
-// WebhookHandler handles the webhook POST request
-func WebhookHandler(w http.ResponseWriter, r *http.Request) {
-	// Read the body of the request
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "could not read request body", http.StatusBadRequest)
-		return
-	}
-
-	var event PushEvent
-	// Unmarshal the body into PushEvent
-	if err := json.Unmarshal(body, &event); err != nil {
-		http.Error(w, "invalid JSON format", http.StatusBadRequest)
-		return
-	}
-
-	// Load the configuration from the YAML file
+func Execute(cloneURL, ref, sha string) (int, error) {
 	cfg, err := config.Load()
 	if err != nil {
-		http.Error(w, "config loading error", http.StatusInternalServerError)
-		return
+		return http.StatusInternalServerError, fmt.Errorf("config loading error: %v", err)
 	}
 
-	// Validate the repository and branch
-	if event.Repository.CloneURL != cfg.Repo.CloneURL || event.Ref != "refs/heads/"+cfg.Repo.Branch {
-		http.Error(w, "unauthorized repository or branch", http.StatusForbidden)
-		return
+	// Validate origin
+	if cloneURL != cfg.Repository.URL || ref != "refs/heads/"+cfg.Repository.Branch {
+		return http.StatusForbidden, fmt.Errorf("unauthorized repository or branch")
 	}
 
-	sha := event.HeadCommit.ID
 	if sha == "" {
-		http.Error(w, "commit SHA missing", http.StatusBadRequest)
-		return
+		return http.StatusBadRequest, fmt.Errorf("commit SHA missing")
 	}
 
-	// Get the currently active service
 	current := util.GetActiveService()
-
-	// Get the next service name based on current active service
 	next := util.GetNextService(current)
+	dir := fmt.Sprintf("%s%s", cfg.Service.DeploymentsDir, next)
 
-	// Define the directory for the deployment
-	// dir := fmt.Sprintf("deployments/%s", sha)
-	dir := fmt.Sprintf("%s%s", cfg.Service.ClonePath, next)
-
-	// Clone or pull the repository
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		// Clone if it doesn't exist
-		cmd := exec.Command("git", "clone", cfg.Repo.CloneURL, dir)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
-			http.Error(w, "repository clone failed", http.StatusInternalServerError)
-			return
+		if err := run("git", "clone", cfg.Repository.URL, dir); err != nil {
+			return http.StatusInternalServerError, fmt.Errorf("repository clone failed: %v", err)
 		}
 	} else {
-		// If the directory exists, just pull the latest changes
-		cmd := exec.Command("git", "-C", dir, "pull")
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
-			http.Error(w, "repository pull failed", http.StatusInternalServerError)
-			return
+		if err := run("git", "-C", dir, "pull"); err != nil {
+			return http.StatusInternalServerError, fmt.Errorf("repository pull failed: %v", err)
 		}
 	}
 
-	// Run the pre-start hook if defined
 	if cfg.Service.PreStartHook != "" {
-		// %i in the PreStartHook is replaced with the next service name
-		// next := util.GetNextService(util.GetActiveService())
-		preStartHook := strings.ReplaceAll(cfg.Service.PreStartHook, "%i", next)
-		cmd := exec.Command(preStartHook)
+		// hook := strings.ReplaceAll(cfg.Service.PreStartHook, "%i", next)
+		// hook := cfg.Service.DeploymentsDir + cfg.Service.PreStartHook
+		// use path combine
+		hook := path.Join(cfg.Service.DeploymentsDir, next, cfg.Service.PreStartHook)
+
+		cmd := exec.Command(hook)
 		cmd.Dir = dir
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err != nil {
-			log.Fatal("pre-start hook failed:", err)
-			http.Error(w, "pre-start hook failed", http.StatusInternalServerError)
-			return
+			log.Println("pre-start hook failed:", err)
+			return http.StatusInternalServerError, fmt.Errorf("pre-start hook failed: %v", err)
 		}
 	}
 
-	// Format unit name based on service name and commit SHA
-	unit := fmt.Sprintf("%s@%s.service", cfg.Service.Name, next)
-
-	// Restart the new service
+	unit := fmt.Sprintf("%s.%s.service", cfg.Service.Name, next)
 	if err := systemd.RestartService(unit); err != nil {
-		log.Println("Failed to restart the next service:", err)
-		http.Error(w, "failed to restart service", http.StatusInternalServerError)
-		return
+		return http.StatusInternalServerError, fmt.Errorf("failed to restart new service: %v", err)
 	}
 
-	// Switch traffic to the new service
-	if err := traffic.UpdateIPTables(cfg.Service.ListenPort, cfg.Service.DestPorts[int(next[0]-'0')-1]); err != nil {
-		log.Println("Failed to update iptables:", err)
-		http.Error(w, "failed to update iptables", http.StatusInternalServerError)
-		return
+	var destPort, prevPort int
+	if next == "blue" {
+		destPort = cfg.Service.TargetPorts[0]
+		prevPort = cfg.Service.TargetPorts[1]
+	} else {
+		destPort = cfg.Service.TargetPorts[1]
+		prevPort = cfg.Service.TargetPorts[0]
 	}
 
-	// Stop the current active service
-	currentUnit := fmt.Sprintf("%s@%s.service", cfg.Service.Name, current)
+	if err := traffic.UpdateIPTables(cfg.Service.ListenPort, destPort, prevPort); err != nil {
+		return http.StatusInternalServerError, fmt.Errorf("iptables update failed: %v", err)
+	}
+
+	currentUnit := fmt.Sprintf("%s.%s.service", cfg.Service.Name, current)
 	if err := systemd.StopService(currentUnit); err != nil {
-		log.Println("Failed to stop the current service:", err)
-		http.Error(w, "failed to stop current service", http.StatusInternalServerError)
-
-		return
+		log.Println("Failed to stop current service:", err)
 	}
 
-	// Update the active service to the new one
 	if err := util.SetActiveService(next); err != nil {
-		log.Println("Failed to set active service:", err)
-		http.Error(w, "failed to set active service", http.StatusInternalServerError)
-		return
+		return http.StatusInternalServerError, fmt.Errorf("failed to update active service: %v", err)
 	}
 
 	log.Println("Deployment successful. Switched to:", next)
-	w.WriteHeader(http.StatusOK)
+	return http.StatusOK, nil
+}
+
+func run(command string, args ...string) error {
+	cmd := exec.Command(command, args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }

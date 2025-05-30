@@ -4,16 +4,28 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
-	"AutoPuller/deploy"
+	"AutoPuller/config"
 	"AutoPuller/systemd"
+	"AutoPuller/webhook"
 )
 
 func main() {
+	if os.Getenv("WEBHOOK_SECRET") == "" {
+		log.Fatal("WEBHOOK_SECRET environment variable not set")
+	}
 
-	systemd.GenerateServiceFile()
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatal("Configuration loading failed:", err)
+	}
 
-	http.HandleFunc("/webhook", deploy.WebhookHandler)
-	fmt.Println("Listening on :9082...")
-	log.Fatal(http.ListenAndServe(":9082", nil))
+	if _, err := systemd.GenerateServiceFiles(); err != nil {
+		log.Fatal("Service generation failed:", err)
+	}
+
+	http.HandleFunc("/webhook", webhook.Handler)
+	fmt.Printf("Starting server on port %d...\n", cfg.WebhookPort)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", cfg.WebhookPort), nil))
 }

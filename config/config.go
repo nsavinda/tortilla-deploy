@@ -7,23 +7,25 @@ import (
 )
 
 type Config struct {
-	Repo struct {
-		CloneURL string `yaml:"clone_url"`
-		Branch   string `yaml:"branch"`
-	} `yaml:"repo"`
+	WebhookPort int `yaml:"webhook_port"`
+
+	Repository struct {
+		URL    string `yaml:"url"`
+		Branch string `yaml:"branch"`
+	} `yaml:"repository"`
 
 	Service struct {
-		Name         string `yaml:"name"`
-		ClonePath    string `yaml:"clonePath"`
-		ExecFile     string `yaml:"execFile"`
-		PreStartHook string `yaml:"preStartHook"`
-		DestPorts    []int  `yaml:"destPorts"`
-		ListenPort   int    `yaml:"listenPort"`
+		Name           string `yaml:"name"`
+		DeploymentsDir string `yaml:"deployments_dir"`
+		Executable     string `yaml:"executable"`
+		PreStartHook   string `yaml:"pre_start_hook"`
+		ListenPort     int    `yaml:"listen_port"`
+		TargetPorts    []int  `yaml:"target_ports"`
 	} `yaml:"service"`
 }
 
 func Load() (*Config, error) {
-	file, err := os.Open("config.yaml")
+	file, err := os.Open("/etc/autopuller/config.yaml")
 	if err != nil {
 		return nil, err
 	}
