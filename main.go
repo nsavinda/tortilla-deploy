@@ -21,7 +21,7 @@ func main() {
 		log.Fatal("Configuration loading failed:", err)
 	}
 
-	if _, err := systemd.GenerateServiceFiles(); err != nil {
+	if _, err := systemd.GenerateAllServiceFiles(); err != nil {
 		log.Fatal("Service generation failed:", err)
 	}
 

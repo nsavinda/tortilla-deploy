@@ -14,42 +14,29 @@
   
 webhook_port: 9082
 
-repository:
-  url: "https://github.com/nsavinda/go-test-server.git"
-  branch: "main"
-
-service:
-  name: autopuller
-  deployments_dir: /home/nirmal/Projects/elixir-craft/AutoPuller/deployments/
-  executable: main
-  pre_start_hook: build.sh
-  listen_port: 8700
-  target_ports:
-    - 8701
-    - 8702
 
 services:
   autopuller:
-    name: autopuller
-    repository:
-      url: "https://github.com/nsavinda/go-test-server.git"
-      branch: "main"
-    deployments_dir: /home/nirmal/Projects/elixir-craft/AutoPuller/deployments/
-    executable: main
-    pre_start_hook: build.sh
-    listen_port: 8700
-    target_ports:
-      - 8701
-      - 8702
+    - name: autopuller
+      repository:
+        url: "https://github.com/nsavinda/go-test-server.git"
+        branch: "main"
+      deployments_dir: /home/nirmal/Projects/elixir-craft/AutoPuller/deployments/autopuller
+      executable: main
+      pre_start_hook: build.sh
+      listen_port: 8700
+      target_ports:
+        - 8701
+        - 8702
   another_service:
-    name: another_service
-    repository:
-      url: "https://github.com/nsavinda/go-test-server.git"
-      branch: "main"
-    deployments_dir: /home/nirmal/Projects/elixir-craft/AutoPuller/deployments/
-    executable: main
-    pre_start_hook: build.sh
-    listen_port: 8703
-    target_ports:
-      - 8704
-      - 8705
+    - name: another_service
+      repository:
+        url: "https://github.com/nsavinda/go-test-server.git"
+        branch: "main"
+      deployments_dir: /home/nirmal/Projects/elixir-craft/AutoPuller/deployments/another_service
+      executable: main
+      pre_start_hook: build.sh
+      listen_port: 8703
+      target_ports:
+        - 8704
+        - 8705

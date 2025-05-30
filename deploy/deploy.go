@@ -21,7 +21,26 @@ func Execute(cloneURL, ref, sha string) (int, error) {
 	}
 
 	// Validate origin
-	if cloneURL != cfg.Repository.URL || ref != "refs/heads/"+cfg.Repository.Branch {
+	// if cloneURL != cfg.Repository.URL || ref != "refs/heads/"+cfg.Repository.Branch {
+	// 	return http.StatusForbidden, fmt.Errorf("unauthorized repository or branch")
+	// }
+	// Check if the clone URL matches any of the configured services
+	var serviceFound bool
+	var serviceName string
+	for _, services := range cfg.Services {
+		for _, service := range services {
+			if service.Repository.URL == cloneURL && ref == "refs/heads/"+service.Repository.Branch {
+				serviceFound = true
+				serviceName = service.Name
+				log.Printf("Deploying service: %s from branch: %s", serviceName, service.Repository.Branch)
+				break
+			}
+		}
+		if serviceFound {
+			break
+		}
+	}
+	if !serviceFound {
 		return http.StatusForbidden, fmt.Errorf("unauthorized repository or branch")
 	}
 
@@ -29,12 +48,15 @@ func Execute(cloneURL, ref, sha string) (int, error) {
 		return http.StatusBadRequest, fmt.Errorf("commit SHA missing")
 	}
 
-	current := util.GetActiveService()
+	current := util.GetActiveService(serviceName)
 	next := util.GetNextService(current)
-	dir := fmt.Sprintf("%s%s", cfg.Service.DeploymentsDir, next)
+	dir := fmt.Sprintf("%s%s", cfg.Services[serviceName][0].DeploymentsDir, next)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return http.StatusInternalServerError, fmt.Errorf("failed to create deployment directory: %v", err)
+	}
 
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		if err := run("git", "clone", cfg.Repository.URL, dir); err != nil {
+		if err := run("git", "clone", cfg.Services[serviceName][0].Repository.URL, dir); err != nil {
 			return http.StatusInternalServerError, fmt.Errorf("repository clone failed: %v", err)
 		}
 	} else {
@@ -43,11 +65,11 @@ func Execute(cloneURL, ref, sha string) (int, error) {
 		}
 	}
 
-	if cfg.Service.PreStartHook != "" {
+	if cfg.Services[serviceName][0].PreStartHook != "" {
 		// hook := strings.ReplaceAll(cfg.Service.PreStartHook, "%i", next)
 		// hook := cfg.Service.DeploymentsDir + cfg.Service.PreStartHook
 		// use path combine
-		hook := path.Join(cfg.Service.DeploymentsDir, next, cfg.Service.PreStartHook)
+		hook := path.Join(cfg.Services[serviceName][0].DeploymentsDir, next, cfg.Services[serviceName][0].PreStartHook)
 
 		cmd := exec.Command(hook)
 		cmd.Dir = dir
@@ -59,25 +81,25 @@ func Execute(cloneURL, ref, sha string) (int, error) {
 		}
 	}
 
-	unit := fmt.Sprintf("%s.%s.service", cfg.Service.Name, next)
+	unit := fmt.Sprintf("%s.%s.service", cfg.Services[serviceName][0].Name, next)
 	if err := systemd.RestartService(unit); err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("failed to restart new service: %v", err)
 	}
 
 	var destPort, prevPort int
 	if next == "blue" {
-		destPort = cfg.Service.TargetPorts[0]
-		prevPort = cfg.Service.TargetPorts[1]
+		destPort = cfg.Services[serviceName][0].TargetPorts[0]
+		prevPort = cfg.Services[serviceName][0].TargetPorts[1]
 	} else {
-		destPort = cfg.Service.TargetPorts[1]
-		prevPort = cfg.Service.TargetPorts[0]
+		destPort = cfg.Services[serviceName][0].TargetPorts[1]
+		prevPort = cfg.Services[serviceName][0].TargetPorts[0]
 	}
 
-	if err := traffic.UpdateIPTables(cfg.Service.ListenPort, destPort, prevPort); err != nil {
+	if err := traffic.UpdateIPTables(cfg.Services[serviceName][0].ListenPort, destPort, prevPort); err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("iptables update failed: %v", err)
 	}
 
-	currentUnit := fmt.Sprintf("%s.%s.service", cfg.Service.Name, current)
+	currentUnit := fmt.Sprintf("%s.%s.service", cfg.Services[serviceName][0].Name, current)
 	if err := systemd.StopService(currentUnit); err != nil {
 		log.Println("Failed to stop current service:", err)
 	}
