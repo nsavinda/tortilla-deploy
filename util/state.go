@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -21,6 +22,7 @@ func getStateFile(serviceName string) (string, error) {
 // GetActiveService returns the current active service from the state file.
 func GetActiveService(serviceName string) string {
 	stateFile, err := getStateFile(serviceName)
+	fmt.Println("State file path:", stateFile)
 	if err != nil {
 		return "blue"
 	}
@@ -40,7 +42,8 @@ func GetNextService(current string) string {
 }
 
 // SetActiveService sets the active service in the state file.
-func SetActiveService(serviceName string) error {
+func SetActiveService(serviceName string, next string) error {
+	fmt.Println("Setting active service to:", serviceName)
 	stateFile, err := getStateFile(serviceName)
 	if err != nil {
 		return err
@@ -48,5 +51,5 @@ func SetActiveService(serviceName string) error {
 	if err := os.MkdirAll(filepath.Dir(stateFile), 0755); err != nil {
 		return err
 	}
-	return os.WriteFile(stateFile, []byte(serviceName), 0644)
+	return os.WriteFile(stateFile, []byte(next), 0644)
 }

@@ -21,7 +21,7 @@ services:
       repository:
         url: "https://github.com/nsavinda/go-test-server.git"
         branch: "main"
-      deployments_dir: /home/nirmal/Projects/elixir-craft/AutoPuller/deployments/autopuller
+      deployments_dir: /home/nirmal/Projects/elixir-craft/AutoPuller/deployments/autopuller/
       executable: main
       pre_start_hook: build.sh
       listen_port: 8700
@@ -31,9 +31,9 @@ services:
   another_service:
     - name: another_service
       repository:
-        url: "https://github.com/nsavinda/go-test-server.git"
+        url: "https://github.com/nsavinda/go-test-server-2.git"
         branch: "main"
-      deployments_dir: /home/nirmal/Projects/elixir-craft/AutoPuller/deployments/another_service
+      deployments_dir: /home/nirmal/Projects/elixir-craft/AutoPuller/deployments/another_service/
       executable: main
       pre_start_hook: build.sh
       listen_port: 8703

@@ -51,9 +51,9 @@ func Execute(cloneURL, ref, sha string) (int, error) {
 	current := util.GetActiveService(serviceName)
 	next := util.GetNextService(current)
 	dir := fmt.Sprintf("%s%s", cfg.Services[serviceName][0].DeploymentsDir, next)
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return http.StatusInternalServerError, fmt.Errorf("failed to create deployment directory: %v", err)
-	}
+	// if err := os.MkdirAll(dir, 0755); err != nil {
+	// 	return http.StatusInternalServerError, fmt.Errorf("failed to create deployment directory: %v", err)
+	// }
 
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		if err := run("git", "clone", cfg.Services[serviceName][0].Repository.URL, dir); err != nil {
@@ -104,7 +104,7 @@ func Execute(cloneURL, ref, sha string) (int, error) {
 		log.Println("Failed to stop current service:", err)
 	}
 
-	if err := util.SetActiveService(next); err != nil {
+	if err := util.SetActiveService(cfg.Services[serviceName][0].Name, next); err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("failed to update active service: %v", err)
 	}
 
