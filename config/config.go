@@ -11,6 +11,11 @@ type Repository struct {
 	Branch string `yaml:"branch"`
 }
 
+type RunAs struct {
+	User  string `yaml:"user"`
+	Group string `yaml:"group"`
+}
+
 type ServiceConfig struct {
 	Name           string     `yaml:"name"`
 	Repository     Repository `yaml:"repository"`
@@ -19,6 +24,7 @@ type ServiceConfig struct {
 	PreStartHook   string     `yaml:"pre_start_hook"`
 	ListenPort     int        `yaml:"listen_port"`
 	TargetPorts    []int      `yaml:"target_ports"`
+	RunAs          RunAs      `yaml:"run_as"`
 }
 
 type Config struct {

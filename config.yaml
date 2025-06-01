@@ -23,6 +23,9 @@ services:
         branch: "main"
       deployments_dir: /home/nirmal/Projects/elixir-craft/AutoPuller/deployments/autopuller/
       executable: main
+      run_as:
+        user: webapptest
+        group: webapptest
       pre_start_hook: build.sh
       listen_port: 8700
       target_ports:
@@ -35,6 +38,9 @@ services:
         branch: "main"
       deployments_dir: /home/nirmal/Projects/elixir-craft/AutoPuller/deployments/another_service/
       executable: main
+      run_as:
+        user: webapptest
+        group: webapptest
       pre_start_hook: build.sh
       listen_port: 8703
       target_ports:

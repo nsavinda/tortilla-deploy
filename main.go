@@ -21,6 +21,10 @@ func main() {
 		log.Fatal("Configuration loading failed:", err)
 	}
 
+	if err := systemd.CreateAllUsers(); err != nil {
+		log.Fatal("User creation failed:", err)
+	}
+
 	if _, err := systemd.GenerateAllServiceFiles(); err != nil {
 		log.Fatal("Service generation failed:", err)
 	}

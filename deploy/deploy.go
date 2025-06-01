@@ -20,11 +20,7 @@ func Execute(cloneURL, ref, sha string) (int, error) {
 		return http.StatusInternalServerError, fmt.Errorf("config loading error: %v", err)
 	}
 
-	// Validate origin
-	// if cloneURL != cfg.Repository.URL || ref != "refs/heads/"+cfg.Repository.Branch {
-	// 	return http.StatusForbidden, fmt.Errorf("unauthorized repository or branch")
-	// }
-	// Check if the clone URL matches any of the configured services
+	// Check if the repository URL and branch match any service in the configuration
 	var serviceFound bool
 	var serviceName string
 	for _, services := range cfg.Services {
@@ -51,27 +47,60 @@ func Execute(cloneURL, ref, sha string) (int, error) {
 	current := util.GetActiveService(serviceName)
 	next := util.GetNextService(current)
 	dir := fmt.Sprintf("%s%s", cfg.Services[serviceName][0].DeploymentsDir, next)
-	// if err := os.MkdirAll(dir, 0755); err != nil {
-	// 	return http.StatusInternalServerError, fmt.Errorf("failed to create deployment directory: %v", err)
+
+	// if _, err := os.Stat(dir); os.IsNotExist(err) {
+	// 	if err := run("git", "clone", cfg.Services[serviceName][0].Repository.URL, dir); err != nil {
+	// 		return http.StatusInternalServerError, fmt.Errorf("repository clone failed: %v", err)
+	// 	}
+	// } else {
+	// 	if err := run("git", "-C", dir, "pull"); err != nil {
+	// 		return http.StatusInternalServerError, fmt.Errorf("repository pull failed: %v", err)
+	// 	}
 	// }
 
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		if err := run("git", "clone", cfg.Services[serviceName][0].Repository.URL, dir); err != nil {
-			return http.StatusInternalServerError, fmt.Errorf("repository clone failed: %v", err)
-		}
-	} else {
-		if err := run("git", "-C", dir, "pull"); err != nil {
-			return http.StatusInternalServerError, fmt.Errorf("repository pull failed: %v", err)
-		}
+	// set user and group for the service
+	systemdRunAs := systemd.RunAs{
+		User:  cfg.Services[serviceName][0].RunAs.User,
+		Group: cfg.Services[serviceName][0].RunAs.Group,
 	}
 
+	systemd.SetDirOwnership(cfg.Services[serviceName][0].DeploymentsDir, systemdRunAs)
+
+	// if _, err := os.Stat(dir); os.IsNotExist(err) {
+	// runAs := cfg.Services[serviceName][0].RunAs
+	repoURL := cfg.Services[serviceName][0].Repository.URL
+
+	tempDir := fmt.Sprintf("%s.tmp", dir)
+	defer os.RemoveAll(tempDir) // cleanup in case of failure
+
+	command := []string{"git", "clone", repoURL, tempDir}
+	if err := run(command[0], command[1:]...); err != nil {
+		return http.StatusInternalServerError, fmt.Errorf("repository clone failed: %v", err)
+	}
+
+	// Set ownership of all files in tempDir
+	if err := systemd.ChownR(tempDir, systemdRunAs); err != nil {
+		return http.StatusInternalServerError, fmt.Errorf("failed to chown cloned repo: %v", err)
+	}
+
+	_ = os.RemoveAll(dir)
+
+	// Replace original dir
+	if err := os.Rename(tempDir, dir); err != nil {
+		return http.StatusInternalServerError, fmt.Errorf("failed to move cloned repo to target: %v", err)
+	}
+	// } else {
+	// 	command := []string{"git", "-C", dir, "pull"}
+	// 	if err := run(cfg.Services[serviceName][0].RunAs, command); err != nil {
+	// 		return http.StatusInternalServerError, fmt.Errorf("repository pull failed: %v", err)
+	// 	}
+	// }
+
 	if cfg.Services[serviceName][0].PreStartHook != "" {
-		// hook := strings.ReplaceAll(cfg.Service.PreStartHook, "%i", next)
-		// hook := cfg.Service.DeploymentsDir + cfg.Service.PreStartHook
-		// use path combine
 		hook := path.Join(cfg.Services[serviceName][0].DeploymentsDir, next, cfg.Services[serviceName][0].PreStartHook)
 
 		cmd := exec.Command(hook)
+		cmd, _ = systemd.RunAsUserGroup(systemdRunAs, cmd)
 		cmd.Dir = dir
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
@@ -114,7 +143,27 @@ func Execute(cloneURL, ref, sha string) (int, error) {
 
 func run(command string, args ...string) error {
 	cmd := exec.Command(command, args...)
+
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
+
+// func run(runAs config.RunAs, command []string) error {
+// 	cmd := exec.Command(command[0], command[1:]...)
+
+// 	// Convert config.RunAs to systemd.RunAs
+// 	systemdRunAs := systemd.RunAs{
+// 		User:  runAs.User,
+// 		Group: runAs.Group,
+// 	}
+
+// 	cmd, err := systemd.RunAsUserGroup(systemdRunAs, cmd)
+// 	if err != nil {
+// 		return fmt.Errorf("failed to run command as user/group: %v", err)
+// 	}
+
+// 	cmd.Stdout = os.Stdout
+// 	cmd.Stderr = os.Stderr
+// 	return cmd.Run()
+// }
